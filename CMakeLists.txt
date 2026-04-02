@@ -1,36 +1,41 @@
 cmake_minimum_required(VERSION 3.10...3.30)
 project(cowars)
 
-include(FetchContent)
-
-# Generate compile_commands.json
+set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Dependencies
+include(FetchContent)
 set(RAYLIB_VERSION 5.5)
-
 FetchContent_Declare(
     raylib
     DOWNLOAD_EXTRACT_TIMESTAMP OFF
     URL https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz
     FIND_PACKAGE_ARGS
 )
-
 FetchContent_MakeAvailable(raylib)
+target_compile_options(raylib PRIVATE -w)
 
-set(COMPILE_FLAGS
-    -std=c2x -Werror -Wall -Wextra  -Wshadow -Wconversion -Wformat=2 -Wcast-align
-    -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls
-    -Wundef -Wfloat-equal -Wpointer-arith -Wswitch-default -Wswitch-enum -Winit-self
-    -Wlogical-op -Wbad-function-cast -Wcast-qual -Wnested-externs -Wstrict-overflow=5
-    -O0 -g3 -D_DEFAULT_SOURCE -fmacro-prefix-map=${CMAKE_SOURCE_DIR}=.
+set(COMPILE_FLAGS -fmacro-prefix-map=${CMAKE_SOURCE_DIR}=.)
+
+set(SOURCES
+    ./src/main.c
+    ./src/net/server.c
+    ./src/net/client.c
+    ./src/net/common.c
+    ./src/net/msg.c
+)
+
+set(INCLUDE_DIRECTORIES
+    ./include
+    ./include/net
+    ./include/util
 )
 
 # Our Project
 add_executable(${PROJECT_NAME})
+target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRECTORIES})
 target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_FLAGS})
-
-add_subdirectory(src)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
@@ -40,13 +45,13 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY $<TAR
 if ("${PLATFORM}" STREQUAL "Web")
     add_custom_command(
         TARGET ${PROJECT_NAME} PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/resources $<TARGET_FILE_DIR:${PROJECT_NAME}>/../resources
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:${PROJECT_NAME}>/../resources
     )
     #DEPENDS ${PROJECT_NAME}
 else()
     add_custom_command(
         TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/resources $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources
     )
     #DEPENDS ${PROJECT_NAME}
 endif()
